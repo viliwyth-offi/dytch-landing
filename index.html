@@ -1,297 +1,85 @@
-<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>dytch - direct shipper leads</title><meta name="description" content="dytch helps small and mid-size US carriers win freight directly from shippers, so you rely less on brokers and load boards."></head><body><div id="root"></div><script>const configuration={"hasStyles":true,"host":location.origin,"lease":"eyJmIjoiZmlsZS0wMU02MldLUFo0QjJCRDhGR0RUQzNHNFAxNiIsInIiOiJmaWxlcmV2aXNpb24tMDFNNjJXUlo4VDk5MUNRSzRWWjhWV0JTRlEiLCJvIjoidXNlci0wMU02MUc2Q1NEVk5FVFAyVlZIU1ZDMFgwWSIsInUiOiIiLCJtIjoibGFyZ2UtcGF5bG9hZHMvdXNlci0wMU02MUc2Q1NEVk5FVFAyVlZIU1ZDMFgwWS9ob3N0ZWQtZmlsZS9maWxlLTAxTTYyV0tQWjRCMkJEOEZHRFRDM0c0UDE2L2VhNmEzYzJiM2JmMTllMmZhMmFlMDg2MTU3NTYzMjlmZDVmMzZiMmEzNGJjYTgzNmU0YWZmN2EyNzgwN2NlYTQiLCJpIjoxNzkzMjQ2NTUzLCJlIjoxNzkzMjQ2NjEzfQ.9yF7TBT8DNT_EcbwUoJsvpSyK4dP6tI3cSl-ATgw_uk","origin":"https://files.instinct.com"};
-(() => {
- let lease = configuration.lease;
- const started = performance.now();
- let renewed = [];
- const media = new WeakMap();
- const imageStyle = document.createElement('style');
- imageStyle.textContent = 'img[data-instinct-loading]{background:linear-gradient(90deg,var(--ds-hairline,#eae9ea) 25%,var(--ds-page,#fbfafa) 50%,var(--ds-hairline,#eae9ea) 75%);background-size:200% 100%;animation:instinct-image-loading 1.6s ease-in-out infinite;color:transparent}@keyframes instinct-image-loading{to{background-position:-200% 0}}@media(prefers-reduced-motion:reduce){img[data-instinct-loading]{animation:none}}';
- document.head.append(imageStyle);
- // The shared app-shell stylesheet pins html, body and #root to a fixed viewport-height scroller; a File is a page whose root must grow with its content so the shell can size the frame to it. Its width is the frame's, so anything wider is clipped rather than scrolling the File sideways into blank space.
- const frameStyle = document.createElement('style');
- frameStyle.textContent = 'html,body,#root{position:static!important;height:auto!important;overflow:visible!important;overflow-x:clip!important;overscroll-behavior:auto!important}';
- document.head.append(frameStyle);
- const modalStyle = document.createElement('style');
- modalStyle.textContent = 'html[data-instinct-modal-viewport] dialog:modal{position:fixed!important;top:var(--instinct-modal-top)!important;bottom:var(--instinct-modal-bottom)!important;max-height:var(--instinct-modal-height)!important;margin-top:auto!important;margin-bottom:auto!important}html[data-instinct-modal-ack][data-instinct-modal-pending] dialog:modal,html[data-instinct-modal-ack][data-instinct-modal-pending] dialog:modal::backdrop{opacity:0!important;pointer-events:none!important}';
- document.head.append(modalStyle);
- const channel = crypto.randomUUID();
- const send = (type, value) => parent.postMessage({source:'instinct-file', channel, type, value}, configuration.origin);
- const requests = new Map();
- const request = (method, params) => new Promise(resolve => {
-   if (requests.size >= 32) { resolve({status:'unavailable'}); return; }
-   const id = crypto.randomUUID();
-   const timer = setTimeout(() => { requests.delete(id); resolve({status:'unknown'}); }, 20000);
-   requests.set(id, result => { clearTimeout(timer); requests.delete(id); resolve(result); });
-   send('request', {id, method, params});
- });
- const assetURL = value => {
-   const url = new URL(value, configuration.host + '/');
-   if (url.origin === configuration.host) url.searchParams.set('lease', lease);
-   return url.href;
- };
- const fetchOriginal = window.fetch.bind(window);
- // detail is a runtime error's message, base64url-encoded into the path: the content edge and the API drop query strings before the gateway.
- const metric = (event, detail) => {
-   let path = '/_instinct/' + event + '/' + Math.min(300000, Math.round(performance.now() - started));
-   if (detail) path += '/' + btoa(String.fromCharCode(...new TextEncoder().encode(detail.slice(0, 200)))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-   void fetchOriginal(assetURL(path), {credentials:'omit'}).catch(() => {});
- };
- const waitForLease = () => new Promise(resolve => {
-   const timer = setTimeout(() => { renewed = renewed.filter(callback => callback !== done); resolve(); }, 10000);
-   const done = () => { clearTimeout(timer); resolve(); };
-   renewed.push(done); send('renew', null);
- });
- window.fetch = async (input, init) => {
-   const value = typeof input === 'string' ? input : input instanceof URL ? input.href : input.url;
-   const url = new URL(value, configuration.host + '/');
-   if (url.origin !== configuration.host) return fetchOriginal(input, init);
-   const request = new Request(assetURL(url.href), input instanceof Request ? input : init);
-   const options = {...init, credentials:'omit'};
-   const response = await fetchOriginal(new Request(request.clone(), options));
-   if (response.status !== 401) return response;
-   await waitForLease();
-   return fetchOriginal(new Request(assetURL(url.href), new Request(request, options)));
- };
- const styleAssets = new Map();
- const inlineStyles = new WeakMap();
- const materializeStyle = async css => {
-   const replacements = new Map();
-   await Promise.all([...css.matchAll(/url\(["']?([^)'"\s]+)["']?\)/g)].map(async ([, value]) => {
-     const url = new URL(value, configuration.host + '/');
-     if (value.startsWith('#') || url.origin !== configuration.host) return;
-     const fragment = url.hash; url.hash = ''; url.searchParams.delete('lease');
-     if (!styleAssets.has(url.href)) {
-       styleAssets.set(url.href, window.fetch(url.href).then(response => {
-         if (!response.ok) throw new Error('Style asset unavailable');
-         return response.blob();
-       }).then(blob => URL.createObjectURL(blob)));
-     }
-     replacements.set(value, await styleAssets.get(url.href) + fragment);
-   }));
-   return css.replace(/url\(["']?([^)'"\s]+)["']?\)/g, (match, value) => replacements.has(value) ? 'url("' + replacements.get(value) + '")' : match);
- };
- // Reused images (for example a product photo in a newly opened dialog) have no intrinsic size until they decode again.
- const imageSizes = new Map(), imageRatioHints = new WeakMap();
- const reserveImageSpace = element => {
-   const source = element.getAttribute('src');
-   const hint = imageRatioHints.get(element);
-   if (hint && hint.source === source && element.style.aspectRatio === hint.ratio && !element.complete && !element.srcset && element.parentElement?.tagName !== 'PICTURE' && element.closest('dialog')) return;
-   if (hint && element.style.aspectRatio === hint.ratio) element.style.setProperty('aspect-ratio', hint.previous, hint.priority);
-   imageRatioHints.delete(element);
-   if (!source || element.srcset || element.parentElement?.tagName === 'PICTURE') return;
-   const url = new URL(source, configuration.host + '/');
-   if (url.origin !== configuration.host) return;
-   url.searchParams.delete('lease');
-   if (element.complete && element.naturalWidth > 0) {
-     imageSizes.set(url.href, element.naturalWidth + ' / ' + element.naturalHeight);
-     return;
-   }
-   const size = imageSizes.get(url.href);
-   if (!size || !element.closest('dialog') || element.hasAttribute('width') || element.hasAttribute('height') || getComputedStyle(element).aspectRatio !== 'auto') return;
-   const ratio = 'auto ' + size;
-   const previous = element.style.aspectRatio, priority = element.style.getPropertyPriority('aspect-ratio');
-   element.style.setProperty('aspect-ratio', ratio, priority);
-   imageRatioHints.set(element, {source, ratio: element.style.aspectRatio, previous, priority});
- };
- const rewrite = element => {
-   if (!element.isConnected || element instanceof HTMLScriptElement) return;
-   // The shell sizes this frame to its content, so native lazy loading waits for the parent page to scroll each image into view and it pops in late.
-   if (element instanceof HTMLImageElement) { if (element.loading === 'lazy') element.loading = 'eager'; reserveImageSpace(element); element.toggleAttribute('data-instinct-loading', !element.complete); }
-   if (element instanceof HTMLAnchorElement) {
-     try {
-       const url = new URL(element.getAttribute('href') || '', configuration.host + '/');
-       if (url.origin !== configuration.host && ['https:', 'http:', 'mailto:', 'tel:'].includes(url.protocol)) {
-         element.target = '_blank';
-         element.rel = 'noopener noreferrer';
-       }
-     } catch {}
-   }
-   for (const attribute of ['src', 'href', 'poster']) {
-     if (element instanceof HTMLAnchorElement && attribute === 'href') continue;
-     const value = element.getAttribute(attribute);
-     const current = media.get(element);
-     if (attribute === 'src' && current && value !== current.url && value !== current.source) {
-       if (current.url) URL.revokeObjectURL(current.url); media.delete(element);
-     }
-     if (!value || value.startsWith('#')) continue;
-     const url = new URL(value, configuration.host + '/');
-     if (url.origin !== configuration.host || element instanceof HTMLAnchorElement) continue;
-     if (attribute === 'src' && (element instanceof HTMLMediaElement || element instanceof HTMLSourceElement && element.parentElement instanceof HTMLMediaElement)) {
-       if (current?.source === value) {
-         if (current.url) element.setAttribute('src', current.url);
-         continue;
-       }
-       const pending = {source:value}; media.set(element, pending);
-       void window.fetch(value).then(response => { if (!response.ok) throw new Error('Media unavailable'); return response.blob(); }).then(blob => {
-         if (media.get(element) !== pending || !element.isConnected) return;
-         pending.url = URL.createObjectURL(blob); element.setAttribute('src', pending.url);
-         if (element instanceof HTMLSourceElement) element.parentElement.load();
-       }).catch(() => send('load-failed', null));
-       continue;
-     }
-     const next = assetURL(value);
-     if (value !== next) element.setAttribute(attribute, next);
-   }
-   const srcset = element.getAttribute('srcset');
-   if (srcset && !srcset.includes('data:')) {
-     const next = srcset.split(',').map(candidate => { const [url, ...descriptor] = candidate.trim().split(/\s+/); return [assetURL(url), ...descriptor].join(' '); }).join(', ');
-     if (srcset !== next) element.setAttribute('srcset', next);
-   }
-   const style = element.getAttribute('style');
-   if (style && inlineStyles.get(element)?.style !== style) {
-     const pending = {style}; inlineStyles.set(element, pending);
-     void materializeStyle(style).then(next => {
-       if (inlineStyles.get(element) !== pending || element.getAttribute('style') !== style || !element.isConnected) return;
-       pending.style = next;
-       if (style !== next) element.setAttribute('style', next);
-     }).catch(() => send('load-failed', null));
-   }
- };
- for (const type of ['click', 'auxclick']) document.addEventListener(type, event => {
-   if (event.target instanceof Element) {
-     const anchor = event.target.closest('a[href]');
-     if (anchor) rewrite(anchor);
-   }
- }, true);
- const releaseMedia = node => {
-   if (!(node instanceof Element) || node.isConnected) return;
-   for (const element of [node, ...node.querySelectorAll('audio,video,source')]) {
-     const current = media.get(element);
-     if (current?.url) {
-       if (element.getAttribute('src') === current.url) element.setAttribute('src', current.source);
-       URL.revokeObjectURL(current.url);
-     }
-     media.delete(element);
-   }
- };
- const observer = new MutationObserver(changes => {
-   for (const change of changes) {
-     if (change.type === 'attributes') rewrite(change.target);
-     for (const node of change.addedNodes) if (node instanceof Element) { rewrite(node); node.querySelectorAll('[src],[href],[poster],[srcset],[style]').forEach(rewrite); }
-     change.removedNodes.forEach(releaseMedia);
-   }
- });
- observer.observe(document.documentElement, {subtree:true,childList:true,attributes:true,attributeFilter:['src','href','poster','srcset','style']});
- const imageRetries = new WeakMap();
- document.addEventListener('load', event => { if (event.target instanceof HTMLImageElement) { reserveImageSpace(event.target); imageRetries.delete(event.target); event.target.removeAttribute('data-instinct-loading'); } }, true);
- document.addEventListener('error', event => {
-   if (!(event.target instanceof HTMLImageElement)) return;
-   const element = event.target;
-   element.removeAttribute('data-instinct-loading');
-   const failed = new URL(element.currentSrc || element.src, configuration.host + '/');
-   if (failed.origin !== configuration.host) return;
-   const source = new URL(failed); source.searchParams.delete('lease');
-   if (imageRetries.get(element) === source.href) return;
-   imageRetries.set(element, source.href);
-   void (failed.searchParams.get('lease') === lease ? waitForLease() : Promise.resolve()).then(() => {
-     if (!element.isConnected || (element.currentSrc || element.src) !== failed.href || failed.searchParams.get('lease') === lease) return;
-     if (element.parentElement instanceof HTMLPictureElement) element.parentElement.querySelectorAll('source').forEach(rewrite);
-     rewrite(element);
-   });
- }, true);
- window.addEventListener('message', event => {
-   const message = event.data;
-   if (event.source !== parent || event.origin !== configuration.origin || !message || message.source !== 'instinct-shell' || message.channel !== channel) return;
-   if (message.type === 'modal-viewport' && message.value && ['top','bottom','height'].every(key => typeof message.value[key] === 'number' && Number.isFinite(message.value[key]))) {
-     modalViewport = null;
-     for (const key of ['top','bottom','height']) document.documentElement.style.setProperty('--instinct-modal-' + key, message.value[key] + 'px');
-     document.documentElement.setAttribute('data-instinct-modal-viewport', '');
-     if (typeof message.value.open === 'boolean') document.documentElement.setAttribute('data-instinct-modal-ack', '');
-     if (!modalOpen || message.value.open !== false) document.documentElement.removeAttribute('data-instinct-modal-pending');
-   }
-   if (message.type === 'response' && message.value && typeof message.value.id === 'string') {
-     requests.get(message.value.id)?.(message.value.result);
-   }
-   if (message.type === 'lease' && typeof message.value === 'string' && message.value.length <= 2048) {
-     lease = message.value;
-     const callbacks = renewed; renewed = []; callbacks.forEach(callback => callback());
-   }
-   if (message.type === 'route' && typeof message.value === 'string' && message.value.length <= 2048 && message.value.startsWith('/') && !message.value.startsWith('//')) {
-     window.dispatchEvent(new CustomEvent('instinct-route', {detail:message.value}));
-   }
- });
- let errorCount = 0;
- const rejectionMessage = reason => { try { return 'Unhandled rejection: ' + (reason instanceof Error ? reason.message : String(reason)); } catch { return 'Unhandled rejection'; } };
- window.addEventListener('error', event => { if (++errorCount <= 20) { const message = String(event.message).slice(0,1024); send('diagnostic', message); metric('error', message); } });
- window.addEventListener('unhandledrejection', event => { if (++errorCount <= 20) { send('diagnostic','Unhandled application promise rejection'); metric('error', rejectionMessage(event.reason)); } });
- window.instinctFile = Object.freeze({initialRoute: decodeURIComponent(location.hash.slice(1) || '/'), route: path => {if (typeof path === 'string' && path.startsWith('/') && !path.startsWith('//') && path.length <= 2048) send('route',path);}, asset: assetURL, request});
- const loadStyles = async () => {
-   if (!configuration.hasStyles) return;
-   const response = await window.fetch('main.css');
-   if (!response.ok) throw new Error('Styles unavailable');
-   const css = await materializeStyle(await response.text());
-   const stylesheet = document.createElement('style');
-   stylesheet.textContent = css + '\nbody:has(> #root > .artifact-card){background:transparent}body:has(> #root > .artifact-card)>#root{padding:0}#root>.artifact-card{border-radius:0;box-shadow:none;background:transparent}'; document.head.append(stylesheet);
- };
- const waitForContent = async () => {
-   const root = document.getElementById('root');
-   if (!root.hasChildNodes()) await new Promise((resolve, reject) => {
-     const mounted = new MutationObserver(() => {
-       if (root.hasChildNodes()) { clearTimeout(deadline); mounted.disconnect(); resolve(); }
-     });
-     const deadline = setTimeout(() => {
-       mounted.disconnect(); reject(new Error('File did not render within 30 seconds'));
-     }, 30000);
-     mounted.observe(root, {childList:true});
-   });
-   // Layout starts font loading even while the parent keeps this frame offscreen.
-   root.getBoundingClientRect();
-   const images = [...root.querySelectorAll('img')].filter(image => {
-     const bounds = image.getBoundingClientRect();
-     return bounds.width > 0 && bounds.height > 0 && bounds.bottom > 0 && bounds.top < innerHeight && bounds.right > 0 && bounds.left < innerWidth;
-   });
-   const assets = Promise.all([...styleAssets.values(), document.fonts.ready, ...images.map(image => {
-     image.loading = 'eager';
-     // A missing image must not hide the rest of the file indefinitely.
-     return image.decode().catch(() => {});
-   })]);
-   // Slow media must not keep already-rendered content hidden.
-   await Promise.race([assets, new Promise(resolve => setTimeout(resolve, 500))]);
- };
- // A native dialog needs the visible viewport, not the full document height of the expanded frame.
- let modalOpen = false, modalViewport = null;
- const reportModal = () => {
-   const open = document.querySelector('dialog:modal') !== null;
-   if (open === modalOpen) return;
-   modalOpen = open;
-   document.documentElement.toggleAttribute('data-instinct-modal-pending', open);
-   if (open && modalViewport === null) modalViewport = window.innerHeight;
-   send('modal', open);
-   if (!open) reportHeight();
- };
- new MutationObserver(reportModal).observe(document.documentElement, {subtree:true,childList:true,attributes:true,attributeFilter:['open']});
- // The trusted shell sizes this frame to its content so one page scroll carries the hero, the card and the file together.
- let reportedHeight = 0, lastViewport = window.innerHeight, lastHeight = 0;
- const reportHeight = () => {
-   // Closing posts across frames; wait for the shell to restore our viewport before measuring viewport-sized content.
-   if (modalOpen || (modalViewport !== null && window.innerHeight !== modalViewport)) return;
-   modalViewport = null;
-   const height = Math.ceil(document.getElementById('root').getBoundingClientRect().bottom + window.scrollY);
-   const viewportDelta = window.innerHeight - lastViewport, heightDelta = height - lastHeight;
-   lastViewport = window.innerHeight; lastHeight = height;
-   // Content sized in viewport units grows with the frame the shell just resized; reporting that would resize it again without end.
-   if (viewportDelta > 0 && heightDelta > 0 && heightDelta <= viewportDelta) { reportedHeight = height; return; }
-   if (height === reportedHeight) return;
-   reportedHeight = height;
-   send('height', height);
- };
- const watchHeight = () => {
-   new ResizeObserver(reportHeight).observe(document.getElementById('root'));
-   window.addEventListener('resize', reportHeight);
-   reportHeight();
- };
- let scriptAttempts = 0;
- const loadScript = () => {
-   const script = document.createElement('script');
-   script.src = assetURL('main.js'); script.crossOrigin = 'anonymous';
-   script.onload = () => { void waitForContent().then(() => { if (document.documentElement.hasAttribute('data-instinct-full-screen')) send('full-screen', null); send('ready', null); metric('ready'); watchHeight(); }).catch(() => send('load-failed', null)); };
-   script.onerror = () => { script.remove(); if (++scriptAttempts < 3) setTimeout(loadScript, 1000 * scriptAttempts); else send('load-failed', null); };
-   document.body.append(script);
- };
- const preload = document.createElement('link');
- preload.rel = 'preload'; preload.as = 'script'; preload.crossOrigin = 'anonymous'; preload.href = assetURL('main.js');
- document.head.append(preload);
- void loadStyles().then(loadScript).catch(() => send('load-failed', null));
- send('handshake', null);
- send('modal-viewport', null);
-})();</script></body></html>
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dytch - direct shipper leads for US trucking companies</title>
+<meta name="description" content="dytch helps small and mid-size US carriers win freight directly from shippers, so you rely less on brokers and load boards.">
+<meta name="theme-color" content="#0f2a43">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta property="og:title" content="dytch - more loads, fewer brokers">
+<meta property="og:description" content="Direct shipper leads and driver recruiting for small and mid-size US carriers.">
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<header class="nav"><div class="wrap nav-in">
+  <a class="brand" href="#top" aria-label="dytch home"><img src="/assets/mark.svg" alt="" width="36" height="36"><span>dytch</span></a>
+  <nav><a href="#services">Services</a><a href="#how">How it works</a><a class="btn btn-sm" href="mailto:dytchagency@gmail.com">Email Aras</a></nav>
+</div></header>
+
+<main id="top">
+<section class="hero"><div class="wrap hero-in">
+  <div class="hero-copy">
+    <p class="eyebrow">Trucking lead generation</p>
+    <h1>More loads,<br>fewer brokers.</h1>
+    <p class="lead">dytch helps small and mid-size US carriers win freight directly from shippers, so you rely less on brokers and load boards. One email starts it: tell Aras your lanes.</p>
+    <div class="cta"><a class="btn" href="mailto:dytchagency@gmail.com">Email dytchagency@gmail.com <span aria-hidden="true">&rarr;</span></a><a class="btn btn-ghost" href="#how">See how it works</a></div>
+    <ul class="proof"><li>Email-only, no sales calls</li><li>Run by one founder</li><li>Carriers across the US</li></ul>
+  </div>
+  <figure class="hero-img"><img src="/assets/YS3R6XHF.jpg" alt="A modern semi truck hauling a dry van trailer on an open interstate at golden hour" width="1448" height="1086"><figcaption>Illustrative image, created for this page.</figcaption></figure>
+</div></section>
+
+<section id="services" class="sec"><div class="wrap">
+  <p class="eyebrow">What dytch does</p>
+  <h2>Three ways to keep your trucks full</h2>
+  <div class="cards">
+    <article class="card"><span class="num">01</span><h3>Shipper lead generation</h3><p>Outreach that puts your lanes and equipment in front of shippers with freight that fits, so the conversation starts with you, not a broker.</p></article>
+    <article class="card"><span class="num">02</span><h3>Driver recruiting leads</h3><p>Campaigns that bring driver applicants to your inbox, so your trucks stay seated and rolling.</p></article>
+    <article class="card"><span class="num">03</span><h3>Websites for carriers</h3><p>A clean, credible site that makes a shipper or a driver comfortable reaching out to you directly.</p></article>
+  </div>
+</div></section>
+
+<section class="sec sec-alt"><div class="wrap split">
+  <div>
+    <p class="eyebrow">Why direct freight</p>
+    <h2>Keep the margin on your side</h2>
+    <p>Brokers take a cut of every load, and load boards turn your lanes into a race to the bottom. Working directly with shippers keeps that margin with you and builds relationships that repeat.</p>
+    <ul class="checks">
+      <li>You talk rates with the shipper, instead of taking what is left after a middleman.</li>
+      <li>A shipper who likes your service comes back, and that freight repeats without a broker.</li>
+      <li>Less time refreshing load boards, more time running loads.</li>
+    </ul>
+  </div>
+  <figure class="side-img"><img src="/assets/G6TPZN64.jpg" alt="A professional truck driver beside his cab at a rest stop in the morning" width="1448" height="1086" loading="lazy"><figcaption>Illustrative image, created for this page.</figcaption></figure>
+</div></section>
+
+<section id="how" class="sec"><div class="wrap">
+  <p class="eyebrow">How it works</p>
+  <h2>Three steps, all by email</h2>
+  <ol class="steps">
+    <li><span class="step-n">1</span><h3>Send your lanes</h3><p>Email Aras with your lanes, equipment, and what you are looking for.</p></li>
+    <li><span class="step-n">2</span><h3>We run outreach</h3><p>dytch builds a list of shippers or driver candidates that fit, and runs outreach on your behalf.</p></li>
+    <li><span class="step-n">3</span><h3>Replies reach you</h3><p>Interested replies land in your inbox. You take it from there.</p></li>
+  </ol>
+</div></section>
+
+<section class="sec sec-alt"><div class="wrap narrow">
+  <p class="eyebrow">Who it is for</p>
+  <h2>Built for owner-operators and growing fleets</h2>
+  <p>Carriers with a handful of trucks up to a mid-size fleet, anywhere in the US. If you run good equipment and want steadier, better-paying freight than the boards offer, this is built for you.</p>
+  <aside class="note"><strong>New agency, no inflated claims.</strong> dytch is a new, one-person agency. You will not find made-up case studies or borrowed logos on this page. What you get is hands-on work from the same person you email.</aside>
+</div></section>
+
+<section class="contact"><div class="wrap contact-in">
+  <div>
+    <h2>Email is the only door.</h2>
+    <p>No calls to book, no forms to fill out. Write a few lines about your lanes and equipment, and Aras will reply personally.</p>
+    <a class="btn btn-amber" href="mailto:dytchagency@gmail.com">Email dytchagency@gmail.com <span aria-hidden="true">&rarr;</span></a>
+  </div>
+  <dl class="facts"><div><dt>Email</dt><dd>dytchagency@gmail.com</dd></div><div><dt>Who answers</dt><dd>Aras, founder of dytch</dd></div><div><dt>Based in</dt><dd>Izmir, Turkey</dd></div><div><dt>Works with</dt><dd>Carriers across the US</dd></div></dl>
+</div></section>
+</main>
+
+<footer class="foot"><div class="wrap foot-in"><a class="brand brand-light" href="#top"><img src="/assets/mark.svg" alt="" width="28" height="28"><span>dytch</span></a><p>dytch is a one-person agency run by Aras. <a href="mailto:dytchagency@gmail.com">dytchagency@gmail.com</a></p></div></footer>
+</body>
+</html>
