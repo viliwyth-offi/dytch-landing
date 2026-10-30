@@ -4,6 +4,7 @@
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
   if (!window.gsap || !window.ScrollTrigger) return;
   gsap.registerPlugin(ScrollTrigger);
+  gsap.ticker.lagSmoothing(0); /* keep reveals wall-clock true on slow devices */
 
   /* Footer: a slow, small rise as it enters view. Runs on every page. */
   var footIn = document.querySelector('.foot .foot-in');
