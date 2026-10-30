@@ -43,7 +43,9 @@
         /* If the trigger sits beyond the furthest the page can scroll
            (short pages, tall viewports), it can never fire - play now. */
         setTimeout(function () {
-          if (!played && st.start > ScrollTrigger.maxScroll(window)) go();
+          var realMax = Math.max(document.documentElement.scrollHeight,
+                                 document.body.scrollHeight) - window.innerHeight;
+          if (!played && st.start > realMax - 2) go();
         }, 1200);
       }
     });
