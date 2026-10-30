@@ -64,3 +64,22 @@ figure{margin:0}figcaption{font-size:.78rem;color:var(--mute);margin-top:8px}
 .faq-item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px}
 .faq-item p{color:var(--mute);margin:0}
 @media(max-width:860px){.offer-in,.faq-grid{grid-template-columns:1fr}.offer-in{gap:22px}}
+.blog-list{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:34px}
+.blog-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:28px;text-decoration:none;display:block;transition:.2s;border-top:4px solid var(--amber)}
+.blog-card:hover{transform:translateY(-4px);box-shadow:0 16px 32px rgba(15,42,67,.1)}
+.blog-card h3{margin-bottom:8px}
+.blog-card p{color:var(--mute);margin:0}
+.blog-card .date{font-size:.8rem;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;display:block}
+.article{max-width:760px;margin:0 auto;padding:64px 24px}
+.article h1{font-size:clamp(2rem,4.5vw,3rem);margin-bottom:18px}
+.article h2{font-size:1.5rem;margin:40px 0 12px}
+.article p,.article li{color:#33414f;font-size:1.06rem}
+.article ul,.article ol{padding-left:24px;margin-bottom:16px}
+.article li{margin-bottom:8px}
+.article .meta{color:var(--mute);font-size:.9rem;margin-bottom:28px}
+.article .cta-box{margin-top:44px;background:var(--alt);border:1px solid var(--line);border-left:4px solid var(--amber);border-radius:0 12px 12px 0;padding:22px 26px}
+.article .cta-box p{margin-bottom:14px}
+.article table{width:100%;border-collapse:collapse;margin:18px 0 24px;font-size:.98rem}
+.article th,.article td{border:1px solid var(--line);padding:10px 12px;text-align:left}
+.article th{background:var(--alt);color:var(--navy)}
+@media(max-width:860px){.blog-list{grid-template-columns:1fr}}
