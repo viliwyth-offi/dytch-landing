@@ -55,3 +55,12 @@ figure{margin:0}figcaption{font-size:.78rem;color:var(--mute);margin-top:8px}
 .foot-in{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
 .foot p{margin:0}.foot a{color:#fff}.brand-light{font-size:1.2rem}
 @media(max-width:860px){.hero-in,.split,.contact-in{grid-template-columns:1fr;gap:36px}.cards,.steps{grid-template-columns:1fr}.hero{padding:44px 0}.sec,.contact{padding:60px 0}.nav nav a:not(.btn){display:none}}
+.offer{background:var(--navy);padding:44px 0}
+.offer-in{display:grid;grid-template-columns:1.4fr auto;gap:40px;align-items:center}
+.offer h2{color:#fff;margin-bottom:10px}
+.offer p{color:#c6d4e2;margin:0;max-width:44em}
+.offer .eyebrow{color:var(--amber)}
+.faq-grid{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:34px}
+.faq-item{background:#fff;border:1px solid var(--line);border-radius:16px;padding:26px}
+.faq-item p{color:var(--mute);margin:0}
+@media(max-width:860px){.offer-in,.faq-grid{grid-template-columns:1fr}.offer-in{gap:22px}}
