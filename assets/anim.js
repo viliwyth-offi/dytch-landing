@@ -24,19 +24,27 @@
         paused: true
       });
       var finish = function () { if (tween.progress() < 1) tween.progress(1); };
-      if (vars.onLoad) {
+      var played = false;
+      var go = function () {
+        if (played) return;
+        played = true;
         tween.play();
         setTimeout(finish, (delay + dur) * 1000 + 800);
+      };
+      if (vars.onLoad) {
+        go();
       } else {
-        ScrollTrigger.create({
+        var st = ScrollTrigger.create({
           trigger: el,
           start: vars.start || 'top bottom',
           once: true,
-          onEnter: function () {
-            tween.play();
-            setTimeout(finish, (delay + dur) * 1000 + 800);
-          }
+          onEnter: go
         });
+        /* If the trigger sits beyond the furthest the page can scroll
+           (short pages, tall viewports), it can never fire - play now. */
+        setTimeout(function () {
+          if (!played && st.start > ScrollTrigger.maxScroll(window)) go();
+        }, 1200);
       }
     });
   }
