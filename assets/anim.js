@@ -30,7 +30,7 @@
       } else {
         ScrollTrigger.create({
           trigger: el,
-          start: vars.start || 'top 92%',
+          start: vars.start || 'top bottom',
           once: true,
           onEnter: function () {
             tween.play();
@@ -42,7 +42,7 @@
   }
 
   /* Footer: a slow, small rise as it enters view. Runs on every page. */
-  revealEach('.foot .foot-in > *', { y: 24, duration: 0.7, stagger: 0.12, start: 'top 94%' });
+  revealEach('.foot .foot-in > *', { y: 24, duration: 0.7, stagger: 0.12 });
 
   /* Blog index: heading settles in, cards stagger up. */
   if (document.querySelector('.blog-list')) {
