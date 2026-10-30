@@ -83,3 +83,7 @@ figure{margin:0}figcaption{font-size:.78rem;color:var(--mute);margin-top:8px}
 .article th,.article td{border:1px solid var(--line);padding:10px 12px;text-align:left}
 .article th{background:var(--alt);color:var(--navy)}
 @media(max-width:860px){.blog-list{grid-template-columns:1fr}}
+
+/* motion (assets/anim.js) */
+.read-progress{position:fixed;top:0;left:0;right:0;height:3px;background:var(--amber);transform:scaleX(0);transform-origin:0 50%;z-index:80;pointer-events:none}
+@media (prefers-reduced-motion: reduce){.read-progress{display:none}}
